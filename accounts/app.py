@@ -9,11 +9,27 @@ import requests
 import json
 
 
+def get_accounts_fqdn():
+    return os.getenv('MULTIPASS_ACCOUNTS_FQDN')
+
+
+def get_token_db():
+    return int(os.getenv('MULTIPASS_TOKEN_DB'))
+
+
+def get_session_db():
+    return int(os.getenv('MULTIPASS_SESSION_DB'))
+
+
+def get_multipass_services():
+    return [x for x in os.getenv('MULTIPASS_SERVICES', '').split(',') if x]
+
+
 app = Flask(__name__)
-cache = redis.Redis(host='redis', port=6379, db=1)
+cache = redis.Redis(host='redis', port=6379, db=get_token_db())
 
 session_options = {
-    'session.cookie_domain': os.getenv('MULTIPASS_ACCOUNTS_FQDN'),
+    'session.cookie_domain': get_accounts_fqdn(),
     'session.cookie_expires': True,
     'session.cookie_path': '/',
     'session.httponly': True,
@@ -23,7 +39,7 @@ session_options = {
     'session.timeout': 3600,
     'session.type': 'redis',
     'session.url': 'redis:6379',
-    'session.db': 2
+    'session.db': get_session_db()
 }
 
 app.wsgi_app = SessionMiddleware(app.wsgi_app, session_options)
@@ -95,10 +111,8 @@ def issue_token(username):
 
 
 def service_origin(service):
-    if service == 'quark':
-        return 'https://{0}'.format(os.getenv('MULTIPASS_QUARK_FQDN'))
-    elif service == 'lepton':
-        return 'https://{0}'.format(os.getenv('MULTIPASS_LEPTON_FQDN'))
+    if service in get_multipass_services():
+        return 'https://{0}'.format(os.getenv('MULTIPASS_{0}_FQDN'.format(service.upper())))
     else:
         abort(401)
 
@@ -119,14 +133,14 @@ def login():
         if valid_login(request.form['username'],
                        request.form['password']):
             start_login_session(request.form['username'])
-            if request.args.get('service', None) in ['quark', 'lepton']:
+            if request.args.get('service', None) in get_multipass_services():
                 start_shared_session()
                 return token_flow()
             return redirect('/')
         else:
             error = 'Invalid username/password'
 
-    if is_authenticated() and request.method == 'GET' and request.args.get('service', None) in ['quark', 'lepton']:
+    if is_authenticated() and request.method == 'GET' and request.args.get('service', None) in get_multipass_services():
         start_shared_session()
         return token_flow()
     return render_template('login.html', error=error, authenticated=is_authenticated(), username=get_username())
@@ -148,7 +162,7 @@ def initiate_oauth():
         'client_id': os.getenv('FACEBOOK_CLIENT_ID'),
         'response_type': 'code',
         'scope': 'email',
-        'redirect_uri': 'https://{0}/oauth'.format(os.getenv('MULTIPASS_ACCOUNTS_FQDN')),
+        'redirect_uri': 'https://{0}/oauth'.format(get_accounts_fqdn()),
         'state': get_oauth_state_token()
     }
 
@@ -167,7 +181,7 @@ def exchange_code(code):
         'code': code,
         'client_id': os.getenv('FACEBOOK_CLIENT_ID'),
         'client_secret': os.getenv('FACEBOOK_CLIENT_SECRET'),
-        'redirect_uri': 'https://{0}/oauth'.format(os.getenv('MULTIPASS_ACCOUNTS_FQDN'))
+        'redirect_uri': 'https://{0}/oauth'.format(get_accounts_fqdn())
     }
     r = requests.get(url, params=params)
     data = {}
@@ -211,7 +225,7 @@ def verify_oauth(state_token, code):
     username = '{first_name} {last_name} <{email}>'.format(**user_info)
     start_login_session(username)
 
-    if get_shared_service() in ['quark', 'lepton']:
+    if get_shared_service() in get_multipass_services():
         return token_flow()
 
     return redirect('/close')
@@ -220,7 +234,7 @@ def verify_oauth(state_token, code):
 @app.route('/oauth')
 def oauth():
     if is_authenticated():
-        if request.args.get('service', None) in ['quark', 'lepton']:
+        if request.args.get('service', None) in get_multipass_services():
             start_shared_session()
             return token_flow()
         else:

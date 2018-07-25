@@ -1,7 +1,7 @@
 version: '3'
 services:
   multipass_accounts:
-    build: accounts
+    build: './accounts'
     ports:
       - '5001:5000'
     volumes:
@@ -9,21 +9,30 @@ services:
     env_file:
       - 'local.env'
       - 'facebook.env'
+    environment:
+      - MULTIPASS_SESSION_DB=2
+      - MULTIPASS_SERVICES=quark,lepton
   multipass_quark:
-    build: quark
+    build: './service'
     ports:
       - '5002:5000'
     volumes:
-      - './quark:/code'
+      - './service:/code'
     env_file:
       - 'local.env'
+    environment:
+      - MULTIPASS_SESSION_DB=3
+      - MULTIPASS_SERVICE=quark
   multipass_lepton:
-    build: lepton
+    build: ./service
     ports:
       - '5003:5000'
     volumes:
-      - './lepton:/code'
+      - './service:/code'
     env_file:
       - 'local.env'
+    environment:
+      - MULTIPASS_SESSION_DB=4
+      - MULTIPASS_SERVICE=lepton
   redis:
     image: 'redis:alpine'

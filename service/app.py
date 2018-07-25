@@ -5,24 +5,48 @@ from flask import Flask, render_template, request, redirect, abort
 from beaker.middleware import SessionMiddleware
 
 
+def get_service_name():
+    return os.getenv('MULTIPASS_SERVICE')
+
+
+def get_token_db():
+    return int(os.getenv('MULTIPASS_TOKEN_DB'))
+
+
+def get_session_db():
+    return int(os.getenv('MULTIPASS_SESSION_DB'))
+
+
 app = Flask(__name__)
-cache = redis.Redis(host='redis', port=6379, db=1)
+cache = redis.Redis(host='redis', port=6379, db=get_token_db())
 
 session_options = {
-    'session.cookie_domain': os.getenv('MULTIPASS_LEPTON_FQDN'),
+    'session.cookie_domain': os.getenv('MULTIPASS_{0}_FQDN'.format(get_service_name().upper())),
     'session.cookie_expires': True,
     'session.cookie_path': '/',
     'session.httponly': True,
-    'session.key': 'multipass_quark_session',
+    'session.key': 'multipass_{0}_session'.format(get_service_name()),
     'session.secure': False,
     'session.serializer': 'json',
     'session.timeout': 3600,
     'session.type': 'redis',
     'session.url': 'redis:6379',
-    'session.db': 4
+    'session.db': get_session_db()
 }
 
 app.wsgi_app = SessionMiddleware(app.wsgi_app, session_options)
+
+
+def get_hit_count():
+    retries = 5
+    while True:
+        try:
+            return cache.incr('hits')
+        except redis.exceptions.ConnectionError as exc:
+            if retries == 0:
+                raise exc
+            retries -= 1
+            time.sleep(0.5)
 
 
 def drop_session():
@@ -47,7 +71,14 @@ def start_login_session(username):
 @app.route('/')
 def index():
     accounts_fqdn = os.getenv('MULTIPASS_ACCOUNTS_FQDN')
-    return render_template('index.html', authenticated=is_authenticated(), username=get_username(), accounts_fqdn=accounts_fqdn)
+    return render_template(
+        'index.html',
+        count=get_hit_count(),
+        authenticated=is_authenticated(),
+        username=get_username(),
+        accounts_fqdn=accounts_fqdn,
+        service_name=get_service_name()
+    )
 
 
 @app.route('/login')
@@ -80,7 +111,7 @@ def logout():
 
 @app.route('/close')
 def close():
-    return render_template('close.html')
+    return render_template('close.html', service=get_service_name())
 
 
 if __name__ == '__main__':

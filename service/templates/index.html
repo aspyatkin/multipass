@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Multipass :: quark</title>
+    <title>Multipass :: {{ service_name }}</title>
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <style>
       body {
@@ -10,15 +10,17 @@
     </style>
   </head>
   <body>
-    <h1>Multipass &ndash; quark</h1>
+    <h1>Multipass &ndash; {{ service_name }}</h1>
 
     {% if authenticated %}
       <p>Logged in as <strong>{{ username }}</strong></p>
       <a href="/logout">Logout</a>
     {% else %}
-      <a href="//{{ accounts_fqdn }}/login?service=quark">Login</a>
+      <a href="//{{ accounts_fqdn }}/login?service={{ service_name }}">Login (redirect flow)</a>
       <br>
-      <a href="//{{ accounts_fqdn }}/oauth?service=quark&popup=yes" class="popup">or login with Facebook</a>
+      <a href="//{{ accounts_fqdn }}/login?service={{ service_name }}&amp;popup=yes" class="popup">Login (popup flow)</a>
+      <br>
+      <a href="//{{ accounts_fqdn }}/oauth?service={{ service_name }}&amp;popup=yes" class="popup">Sign in with Facebook</a>
     {% endif %}
 
     <script>
