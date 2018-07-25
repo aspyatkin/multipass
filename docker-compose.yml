@@ -1,0 +1,29 @@
+version: '3'
+services:
+  multipass_accounts:
+    build: accounts
+    ports:
+      - '5001:5000'
+    volumes:
+      - './accounts:/code'
+    env_file:
+      - 'local.env'
+      - 'facebook.env'
+  multipass_quark:
+    build: quark
+    ports:
+      - '5002:5000'
+    volumes:
+      - './quark:/code'
+    env_file:
+      - 'local.env'
+  multipass_lepton:
+    build: lepton
+    ports:
+      - '5003:5000'
+    volumes:
+      - './lepton:/code'
+    env_file:
+      - 'local.env'
+  redis:
+    image: 'redis:alpine'

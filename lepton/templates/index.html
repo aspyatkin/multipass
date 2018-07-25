@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Multipass :: lepton</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <style>
+      body {
+        background-color: #aaffc3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Multipass &ndash; lepton</h1>
+
+    {% if authenticated %}
+      <p>Logged in as <strong>{{ username }}</strong></p>
+      <a href="/logout">Logout</a>
+    {% else %}
+      <a href="//{{ accounts_fqdn }}/login?service=lepton&popup=yes" class="popup">Login</a>
+      <br>
+      <a href="//{{ accounts_fqdn }}/oauth?service=lepton&popup=yes" class="popup">or login with Facebook</a>
+
+      <script>
+        function presentPopup (options) {
+          options.windowName = options.windowName || 'ConnectWithOAuth'
+          options.windowOptions = options.windowOptions || 'location=0,status=0,width=800,height=400'
+          options.callback = options.callback || function () {
+            window.location.reload()
+          }
+          var that = this
+          that._oauthWindow = window.open(options.url, options.windowName, options.windowOptions)
+          that._oauthInterval = window.setInterval(function () {
+            if (that._oauthWindow.closed) {
+              window.clearInterval(that._oauthInterval)
+              options.callback()
+            }
+          }, 500)
+        }
+
+        $('.popup').on('click', function (e) {
+          e.preventDefault()
+          presentPopup({
+            url: $(this).attr('href')
+          })
+        })
+      </script>
+    {% endif %}
+  </body>
+</html>
