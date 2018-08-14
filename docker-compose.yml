@@ -1,11 +1,12 @@
 version: '3'
 services:
   multipass_accounts:
-    build: './accounts'
+    image: 'aspyatkin/multipass_accounts:0.1.0'
+    # build: './accounts'
     ports:
       - '5001:5000'
-    volumes:
-      - './accounts:/code'
+    # volumes:
+    #   - './accounts:/code'
     env_file:
       - 'local.env'
       - 'facebook.env'
@@ -13,22 +14,24 @@ services:
       - MULTIPASS_SESSION_DB=2
       - MULTIPASS_SERVICES=quark,lepton
   multipass_quark:
-    build: './service'
+    image: 'aspyatkin/multipass_service:0.1.0'
+    # build: './service'
     ports:
       - '5002:5000'
-    volumes:
-      - './service:/code'
+    # volumes:
+    #   - './service:/code'
     env_file:
       - 'local.env'
     environment:
       - MULTIPASS_SESSION_DB=3
       - MULTIPASS_SERVICE=quark
   multipass_lepton:
-    build: ./service
+    image: 'aspyatkin/multipass_service:0.1.0'
+    # build: './service'
     ports:
       - '5003:5000'
-    volumes:
-      - './service:/code'
+    # volumes:
+    #   - './service:/code'
     env_file:
       - 'local.env'
     environment:
